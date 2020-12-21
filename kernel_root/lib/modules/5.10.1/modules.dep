@@ -1,0 +1,26 @@
+kernel/fs/fat/fat.ko:
+kernel/fs/fat/vfat.ko: kernel/fs/fat/fat.ko
+kernel/fs/efivarfs/efivarfs.ko:
+kernel/crypto/xor.ko:
+kernel/crypto/async_tx/async_tx.ko:
+kernel/crypto/async_tx/async_memcpy.ko: kernel/crypto/async_tx/async_tx.ko
+kernel/crypto/async_tx/async_xor.ko: kernel/crypto/xor.ko kernel/crypto/async_tx/async_tx.ko
+kernel/crypto/async_tx/async_pq.ko: kernel/crypto/async_tx/async_xor.ko kernel/crypto/xor.ko kernel/crypto/async_tx/async_tx.ko kernel/lib/raid6/raid6_pq.ko
+kernel/crypto/async_tx/async_raid6_recov.ko: kernel/crypto/async_tx/async_tx.ko kernel/lib/raid6/raid6_pq.ko
+kernel/lib/raid6/raid6_pq.ko:
+kernel/drivers/net/ethernet/intel/e1000/e1000.ko:
+kernel/drivers/net/ethernet/realtek/8139too.ko: kernel/drivers/net/mii.ko
+kernel/drivers/net/ethernet/realtek/r8169.ko:
+kernel/drivers/net/mii.ko:
+kernel/drivers/thermal/intel/x86_pkg_temp_thermal.ko:
+kernel/drivers/md/raid456.ko: kernel/crypto/async_tx/async_raid6_recov.ko kernel/crypto/async_tx/async_memcpy.ko kernel/crypto/async_tx/async_pq.ko kernel/crypto/async_tx/async_xor.ko kernel/crypto/xor.ko kernel/crypto/async_tx/async_tx.ko kernel/lib/raid6/raid6_pq.ko
+kernel/net/netfilter/nf_log_common.ko:
+kernel/net/netfilter/xt_mark.ko:
+kernel/net/netfilter/xt_nat.ko:
+kernel/net/netfilter/xt_LOG.ko:
+kernel/net/netfilter/xt_MASQUERADE.ko:
+kernel/net/netfilter/xt_addrtype.ko:
+kernel/net/ipv4/netfilter/nf_log_arp.ko: kernel/net/netfilter/nf_log_common.ko
+kernel/net/ipv4/netfilter/nf_log_ipv4.ko: kernel/net/netfilter/nf_log_common.ko
+kernel/net/ipv4/netfilter/iptable_nat.ko:
+kernel/net/ipv6/netfilter/nf_log_ipv6.ko: kernel/net/netfilter/nf_log_common.ko

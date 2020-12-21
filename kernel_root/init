@@ -1,0 +1,7 @@
+#!/bin/busybox sh
+echo "INIT SCRIPT"
+mount -t devtmpfs  devtmpfs  /dev
+mount -t proc      proc      /proc
+mount -t sysfs     sysfs     /sys
+mount -t tmpfs     tmpfs     /tmp
+exec /bin/busybox sh

@@ -29,6 +29,10 @@ int main(int argc, char *argv[])
     bind(listenfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)); 
 
     listen(listenfd, 10);//Listens to 10 connections
+    if(listen(listenfd,10)==0)
+    {
+        printf("Listening to connections\n");
+    }
 
     while(1)
     {

@@ -1,12 +1,8 @@
-#ifndef DEBUG
-#define DEBUG 0
-#endif
-
 #define LIBSSH_STATIC 1//Static linking
 #include <libssh/libssh.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <signal.h>
+#include <sys/signal.h>
 #include <errno.h>
 #include <string.h>
 
@@ -64,47 +60,59 @@ int server_authentication(ssh_session server_session)
         case SSH_KNOWN_HOSTS_OK: 
             break;
         case SSH_KNOWN_HOSTS_CHANGED:
+        {
             fprintf(stderr, "Host key for server changed: it is now:\n");
             ssh_print_hexa("Public key hash", hash, hash_len);
             fprintf(stderr, "For security reasons, connection will be stopped\n");
             ssh_clean_pubkey_hash(&hash);
             return -1;
+        }
         case SSH_KNOWN_HOSTS_OTHER:
+        {
             fprintf(stderr, "The host key for this server was not found but an other"
                     "type of key exists.\n");
             fprintf(stderr, "An attacker might change the default server key to"
                     "confuse your client into thinking the key does not exist\n");
             ssh_clean_pubkey_hash(&hash);
             return -1;
+        }
         case SSH_KNOWN_HOSTS_NOT_FOUND:
+        {
             fprintf(stderr, "Could not find known host file.\n");
             fprintf(stderr, "If you accept the host key here, the file will be"
                     "automatically created.\n");
             /* FALL THROUGH to SSH_SERVER_NOT_KNOWN behavior */
+        }
         case SSH_KNOWN_HOSTS_UNKNOWN:
-            hexa = ssh_get_hexa(hash, hash_len);
-            fprintf(stderr,"The server is unknown. Do you trust the host key?\n");
-            fprintf(stderr, "Public key hash: %s\n", hexa);
-            ssh_string_free_char(hexa);
-            ssh_clean_pubkey_hash(&hash);
-            p = fgets(buf, sizeof(buf), stdin);
-            if (p == NULL) {
-                return -1;
+            {
+                hexa = ssh_get_hexa(hash, hash_len);
+                fprintf(stderr,"The server is unknown. Do you trust the host key?\n");
+                fprintf(stderr, "Public key hash: %s\n", hexa);
+                ssh_string_free_char(hexa);
+                ssh_clean_pubkey_hash(&hash);
+                p = fgets(buf, sizeof(buf), stdin);
+                if (p == NULL) {
+                    return -1;
+                }
+            
+                cmp = strncasecmp(buf, "yes", 3);
+                if (cmp != 0) {
+                    return -1;
+                }
+                key_check_server = ssh_session_update_known_hosts(server_session);
+                if (key_check_server < 0) {
+                    fprintf(stderr, "Error %s\n", strerror(errno));
+                    return -1;
+                }
+                break;
             }
-            cmp = strncasecmp(buf, "yes", 3);
-            if (cmp != 0) {
-                return -1;
-            }
-            key_check_server = ssh_session_update_known_hosts(server_session);
-            if (key_check_server < 0) {
-                fprintf(stderr, "Error %s\n", strerror(errno));
-                return -1;
-            }
-            break;
+
         case SSH_KNOWN_HOSTS_ERROR:
+        {
             fprintf(stderr, "Error %s", ssh_get_error(server_session));
             ssh_clean_pubkey_hash(&hash);
             return -1;
+        }
 
     }
 
@@ -137,6 +145,31 @@ void user_authentication()
     }
 }
 
+//Open a remote shell
+
+int remote_shell(ssh_session session)
+{
+    ssh_channel channel;
+    int conn_check;
+
+    channel = ssh_channel_new(session);//Creates the SSH channel
+    if(channel == NULL)
+        return SSH_ERROR;
+    
+    conn_check = ssh_channel_open_session(channel);//Opens the remote shell
+    if(conn_check != SSH_OK)//If the channel is not open
+    {
+        ssh_channel_free(channel);//Frees the channel
+        return conn_check;
+    }
+
+    ssh_channel_close(channel);
+    ssh_channel_send_eof(channel);//Sends a EOF signal to the channel
+    ssh_channel_free(channel);
+
+    return SSH_OK;
+}
+
 int main(int argc, char *argv[])
 {
     //Signal description
@@ -160,7 +193,9 @@ int main(int argc, char *argv[])
     ssh_options_set(my_ssh_session, SSH_OPTIONS_PORT, &ssh_port);//Defines the port to connect to in case the port is a integer
     ssh_options_set(my_ssh_session, SSH_OPTIONS_LOG_VERBOSITY, &protocol_type);//Defines the session logging verbosity
 
+    //server_authentication(my_ssh_session);
     user_authentication();
+    remote_shell(my_ssh_session);
 
     //Server Connection
     conn_check = ssh_connect(my_ssh_session);//Connection to server
